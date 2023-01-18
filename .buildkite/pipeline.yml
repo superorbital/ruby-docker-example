@@ -13,10 +13,15 @@ steps:
                 volumeMounts:
                 - name: buildkit-client
                   mountPath: /buildkit/certs
+                - name: docker-creds
+                  mountPath: /creds/.docker
             volumes:
             - name: buildkit-client
               secret:
                 secretName: buildkit-client-certs
+            - name: docker-creds
+              secret:
+                secretName: dockerconfigjson
   - label: "print image result"
     depends_on: image
     command: buildkite-agent meta-data get "image"
