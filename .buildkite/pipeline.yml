@@ -19,17 +19,6 @@ steps:
                 secretName: buildkit-client-certs
   - label: "print image result"
     depends_on: image
+    command: buildkite-agent meta-data get "image"
     agents:
       queue: kubernetes
-    plugins:
-      - kubernetes:
-          podSpec:
-            containers:
-              - name: generic
-                image: buildkite/agent:latest
-                command:
-                - buildkite-agent
-                args:
-                - meta-data
-                - get
-                - "image"
