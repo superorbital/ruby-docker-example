@@ -21,6 +21,8 @@ steps:
     depends_on: image
     agents:
       queue: kubernetes
+    env:
+      BUILDKITE_SHELL: /bin/sh -e
     plugins:
       - kubernetes:
           podSpec:
