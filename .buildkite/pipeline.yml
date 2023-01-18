@@ -1,6 +1,28 @@
 steps:
-  - name: ":rspec:"
-    command: "rspec --color specs"
+  - label: ":docker: build image"
+    key: image
+    agents:
+      queue: kubernetes
     plugins:
-      docker-compose#v3.9.0:
-        run: app
+      - kubernetes:
+          podSpec:
+            containers:
+              - name: docker
+                image: crazymax/docker:latest
+                command: [.buildkite/steps/image.sh]
+  - label: "print image result"
+    depends_on: image
+    agents:
+      queue: kubernetes
+    plugins:
+      - kubernetes:
+          podSpec:
+            containers:
+              - name: busybox
+                image: busybox:latest
+                command:
+                - buildkite-agent
+                args:
+                - meta-data
+                - get
+                - "image"
