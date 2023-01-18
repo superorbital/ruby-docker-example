@@ -10,4 +10,4 @@ docker buildx use remote
 docker buildx build --tag=ttl.sh/buildkite-ruby-sample:5m --platform=linux/arm64 --push --metadata-file="$(pwd)/metadata.json" .
 
 image=$(jq -r '"\(."image.name")@\(."containerimage.digest")"' metadata.json)
-buildkite-agent metadata set "image" "${image}"
+buildkite-agent meta-data set "image" "${image}"
