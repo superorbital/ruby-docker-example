@@ -2,54 +2,55 @@
 
 [![Add to Buildkite](https://buildkite.com/button.svg)](https://buildkite.com/new)
 
-This repository is an example on how to test a [Ruby](https://www.ruby-lang.org/en/) project using [Buildkite](https://buildkite.com/) and [Docker](https://docker.com/). It uses the standard [Ruby Docker image](https://hub.docker.com/_/ruby/) and [Buildkite’s Docker-based Builds](https://buildkite.com/docs/guides/docker-containerized-builds).
+This repository is an example on how to test a [Ruby](https://www.ruby-lang.org/en/) project using [Buildkite](https://buildkite.com/), [Kubernetes Agent Stack](https://github.com/buildkite/agent-stack-k8s/tree/v2), and [Docker](https://docker.com/). It uses the standard [Ruby Docker image](https://hub.docker.com/_/ruby/) and the Buildkite [Kubernetes Agent Stack](https://github.com/buildkite/agent-stack-k8s/tree/v2).
 
-## Running locally
+## Setup
 
-To run this locally:
+### Buildkit Daemon
+
+This pipeline requires two dependencies to replicate the build on the Kubernetes agent stack. First, the buildkitd daemon was configured using the instructions for the Deployment and Service found in [the buildkit repository](https://github.com/moby/buildkit/tree/master/examples/kubernetes). 
 
 ```
-$ docker-compose run app rspec --color specs
-Building app
-Step 1/6 : FROM ruby:2.7
- ---> fb53c5f433da
-Step 2/6 : RUN mkdir /app
- ---> Using cache
- ---> 0d79a968fbbb
-Step 3/6 : WORKDIR /app
- ---> Using cache
- ---> 20faa284ae78
-Step 4/6 : ADD Gemfile Gemfile.lock /app/
- ---> 050ec65cce16
-Step 5/6 : RUN bundle install -j 8
- ---> Running in 3102f1bf36cd
-Fetching gem metadata from https://rubygems.org/..........
-Using bundler 2.1.2
-Fetching rspec-support 3.4.1
-Fetching diff-lcs 1.2.5
-Installing diff-lcs 1.2.5
-Installing rspec-support 3.4.1
-Fetching rspec-expectations 3.4.0
-Fetching rspec-mocks 3.4.1
-Fetching rspec-core 3.4.2
-Installing rspec-core 3.4.2
-Installing rspec-expectations 3.4.0
-Installing rspec-mocks 3.4.1
-Fetching rspec 3.4.0
-Installing rspec 3.4.0
-Bundle complete! 1 Gemfile dependency, 7 gems now installed.
-Use `bundle info [gemname]` to see where a bundled gem is installed.
-Removing intermediate container 3102f1bf36cd
- ---> 417ad2370e72
-Step 6/6 : ADD . /app
- ---> 593b562046e7
-Successfully built 593b562046e7
-Successfully tagged ruby-docker-example_app:latest
-WARNING: Image for service app was built because it did not already exist. To rebuild this image you must use `docker-compose build` or `docker-compose up --build`.
-.
+./create-certs.sh 127.0.0.1 buildkitd.default.svc buildkitd.default buildkitd.default.svc.cluster.local
+kubectl apply -f .certs/buildkit-daemon-certs.yaml
+kubectl apply -f deployment+service.rootless.yaml
+```
 
-Finished in 0.00044 seconds (files took 0.05898 seconds to load)
-1 example, 0 failures
+The previous instructions also create buildkit client certs Kubernetes secret which need to be used to configure the remote builder. Load that secret into the buildkite agent stack namespace with the following command:
+
+```
+kubectl apply -n buildkite -f .certs/buildkite-client-certs.yaml
+```
+
+### GHCR Auth
+
+Then, set up authentication to GHCR using a github personal access token.
+create a token with access to `packages:read` and `packages:write`.
+
+Base64 encode your github username and token:
+
+```
+echo -n "$GITHUB_USERNAME:$GITHUB_TOKEN" | base64
+```
+
+Take that result and build a Docker `config.json` file:
+
+```
+{
+    "auths":
+    {
+        "ghcr.io":
+            {
+                "auth":"$BASE64_ENCODED_AUTH"
+            }
+    }
+}
+```
+
+Then, use this file to create a secret:
+
+```
+kubectl create secret -n buildkite generic dockerconfigjson --from-file=config.json 
 ```
 
 ## License
