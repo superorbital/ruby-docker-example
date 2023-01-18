@@ -26,7 +26,7 @@ steps:
           podSpec:
             containers:
               - name: generic
-                image: ubuntu:latest
+                image: buildkite/agent:latest
                 command:
                 - buildkite-agent
                 args:
