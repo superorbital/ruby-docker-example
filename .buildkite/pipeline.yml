@@ -21,14 +21,12 @@ steps:
     depends_on: image
     agents:
       queue: kubernetes
-    env:
-      BUILDKITE_SHELL: /bin/sh -e
     plugins:
       - kubernetes:
           podSpec:
             containers:
-              - name: busybox
-                image: busybox:latest
+              - name: generic
+                image: ubuntu:latest
                 command:
                 - buildkite-agent
                 args:
